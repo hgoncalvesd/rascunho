@@ -1,0 +1,129 @@
+CHAVEAR PARA NODE 1
+
+​##############
+# STOP ICS NODE2   #
+##############
+
+hostname: eai-wps-02 
+usuário: wbiadm2 
+
+- Verificar / Confirmar qual ICS esta ATIVO : 
+
+$ echo "display qlocal(CIC.INPUT)" | runmqsc BIOSIGP2
+
+PUT(ENABLE) ou PUT(DISABLED)
+
+NOTA: SE ESTIVER ENABLE É PORQUE ESTE NÓ ESTA ATIVO.
+NOTA: SE ESTIVER DISABLED É PORQUE ESTE NÓ NÃO ESTA ATIVO.
+
+- Acessar o diretório:
+
+$ cd /ics2home/agente/bin/
+
+- Executar os comandos abaixo:
+
+$ ./mqcontrol.sh BIOSIGP2 disable
+
+- Mover mensagens do MQ para o node 2
+
+$ ./mqcontrol.sh movmsgsinput
+
+Após esta ação conecte no BIOSIGP1 utilize o wmqtool ou o mqexplorer veja se as mensagens da fila foram consumidas.
+
+#############################
+# REALIZANDO RESTART NO NODE PARADO  #
+#############################
+
+ORDEM DE EXECUÇÃO STOP
+
+1º conectores
+2º ICS
+3º ORB
+
+PARANDO OS CONECTORES:
+
+$ /ICS2HA/bin/connector_manager_CIC -stop
+$ /ICS2HA/bin/connector_manager_Granite2 -stop
+$ /ICS2HA/bin/connector_manager_Granite3 -stop
+$ /ICS2HA/bin/connector_manager_Granite -stop
+$ /ICS2HA/bin/connector_manager_GraniteJDBC -stop
+$ /ICS2HA/bin/connector_manager_LobatoMQ -stop
+$ /ICS2HA/bin/connector_manager_Massivas -stop
+$ /ICS2HA/bin/connector_manager_NetExpertJMS -stop
+$ /ICS2HA/bin/connector_manager_PortalJMS -stop
+$ /ICS2HA/bin/connector_manager_SNDJMS -stop
+$ /ICS2HA/bin/connector_manager_WebSphereMQWorkflow2 -stop
+$ /ICS2HA/bin/connector_manager_WebSphereMQWorkflow3 -stop
+$ /ICS2HA/bin/connector_manager_WebSphereMQWorkflow -stop
+
+PARAR ICS:
+
+$ /ics2home/scripts/stopICS.sh
+
+PARAR ORB:
+
+$ /ics2home/scripts/stopORB.sh
+
+##############
+# START ICS NODE2 #
+##############
+
+hostname: eai-wps-02 
+usuário: wbiadm2
+
+- START ORB 
+
+$ nohup /usr/IBM/WebSphereICS/bin/PersistentNameServer.sh > /usr/IBM/WebSphereICS/PersistentNameServer.out &
+
+- START ICS 
+
+$ ics_manager -start -c/ICS2HA/config/InterchangeSystem.cfg &
+
+EXECUTE O COMANDO E ESPERE CHEGAR A 100 PARA PROSSEGUIR COM OS DEMAIS PASSOS DO START
+
+$ cat /usr/IBM/WebSphereICS2/logs/ics_manager.log | grep -i collab | wc -l
+
+100 -> media de 40 min a 1hr para chegar a 100
+
+- LOGS ICS 
+
+tail -555f /usr/IBM/WebSphereICS2/logs/ics_manager.log
+tail -f /usr/IBM/WebSphereICS2/logs/InterchangeSystem.log 
+tail -f /usr/IBM/WebSphereICS2/logs/InterchangeSystem.log | grep -i "is ready"
+
+#verificar connectores
+/ics2home/CompCtrl/comp_ctrl.sh -sPRDICS2 -uadmin -pnull -lcona
+
+OBS.: Caso seja necessário o START dos agents ( ORDEM ) 
+
+$ /ICS2HA/bin/connector_manager_CIC -start
+$ /ICS2HA/bin/connector_manager_LobatoMQ -start
+$ /ICS2HA/bin/connector_manager_NetExpertJMS -start
+$ /ICS2HA/bin/connector_manager_WebSphereMQWorkflow2 -start
+$ /ICS2HA/bin/connector_manager_WebSphereMQWorkflow3 -start
+$ /ICS2HA/bin/connector_manager_WebSphereMQWorkflow -start
+$ /ICS2HA/bin/connector_manager_Granite2 -start
+$ /ICS2HA/bin/connector_manager_Granite3 -start
+$ /ICS2HA/bin/connector_manager_Granite -start
+$ /ICS2HA/bin/connector_manager_GraniteJDBC -start
+$ /ICS2HA/bin/connector_manager_Massivas -start
+$ /ICS2HA/bin/connector_manager_PortalJMS -start
+$ /ICS2HA/bin/connector_manager_SNDJMS -start
+
+#verificar agents 
+/ics2home/CompCtrl/comp_ctrl.sh -sPRDICS2 -uadmin -pnull -lcona 
+
+$ connector_manager_Granite3 -start -c/ICS2HA/config/Granite3Connector.cfg
+$ connector_manager_Granite -start -c/ICS2HA/config/GraniteConnector.cfg
+$ connector_manager_GraniteJDBC -start -c/ICS2HA/config/GraniteJDBCConnector.cfg
+$ connector_manager_NetExpertJMS -start -c/ICS2HA/config/NetExpertJMSConnector.cfg
+$ connector_manager_LobatoMQ -start -c/ICS2HA/config/LobatoMQConnector.cfg
+$ connector_manager_Massivas -start -c/ICS2HA/config/MassivasConnector.cfg
+$ connector_manager_CIC -start -c/ICS2HA/config/CICConnector.cfg
+$ connector_manager_PortalJMS -start -c/ICS2HA/config/PortalJMSConnector.cfg
+$ connector_manager_SNDJMS -start -c/ICS2HA/config/SNDJMSConnector.cfg
+$ connector_manager_WebSphereMQWorkflow -start -c/ICS2HA/config/WebSphereMQWorkflowConnector.cfg
+$ connector_manager_WebSphereMQWorkflow3 -start -c/ICS2HA/config/WebSphereMQWorkflow3Connector.cfg
+$ connector_manager_WebSphereMQWorkflow2 -start -c/ICS2HA/config/WebSphereMQWorkflow2Connector.cfg 
+
+
